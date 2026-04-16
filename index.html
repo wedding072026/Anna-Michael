@@ -1394,7 +1394,7 @@ inner.addEventListener('touchend',   e => { const d = e.changedTouches[0].client
 /* ── FORM → Google Sheets (Apps Script) ───────── */
 /** Подставьте URL веб-приложения и тот же секрет, что в google-apps-script/Code.gs */
 const SHEETS_FORM = {
-  scriptUrl: 'https://script.google.com/macros/s/AKfycbww0sin333rXjFmPO7Giidl_mQvS0ilbUvceWxFOzuev1C69euXvRcuIEOYV9UeBaxL/exec',
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbzQ5B-2uJfaye1jZL8aEZJmzAuPg5eaEX4zCzs1NylD-p36rq63OzWQMa6XVqlmsqZb/exec',
   secret: 'mJ8kL2nQ9pR5sT7vW1xY4zA6bC0dE3fG7h',
 };
 
@@ -1432,9 +1432,11 @@ async function submitForm() {
   };
 
   try {
+    /* text/plain — «простой» запрос без preflight OPTIONS; application/json ломает отправку с GitHub Pages */
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
     let data = {};
