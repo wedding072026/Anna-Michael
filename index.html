@@ -884,6 +884,11 @@
       box-shadow: 0 4px 16px rgba(0,0,0,.22);
     }
     .submit-btn:hover { background: #4a5f48; transform: translateY(-2px); }
+    .submit-btn:disabled {
+      opacity: 0.65; cursor: not-allowed; transform: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    }
+    .submit-btn:disabled:hover { background: var(--forest); transform: none; }
     .form-success {
       display: none; text-align: center;
       padding: 24px 0 8px;
@@ -941,15 +946,13 @@
       margin-bottom: 28px;
     }
     .ft-media {
-      width: 100%; max-width: 350px; height: 240px;
+      width: 100%; max-width: 350px;
       border-radius: 8px; overflow: hidden;
       margin: 0 auto 36px;
       box-shadow: 0 18px 52px rgba(0,0,0,.4);
       background: rgba(0,0,0,.25);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 8px;
     }
-    .ft-media video, .ft-media img { width:100%; height:100%; object-fit:cover; }
+    .ft-media video, .ft-media img { width: 100%; height: auto; display: block; }
     .ft-media span { font-size: 32px; opacity: .45; }
     .ft-media p { font-size: 11px; color: var(--sage); letter-spacing: 3px; }
     .ft-rule { width: 36px; height: 1px; background: rgba(139,144,124,.35); margin: 0 auto 16px; }
@@ -1262,7 +1265,7 @@
           <span class="radio-txt">К сожалению, не смогу</span>
         </label>
       </div>
-      <button class="submit-btn" onclick="submitForm()">Отправить анкету</button>
+      <button type="button" class="submit-btn" id="form-submit" onclick="submitForm()">Отправить анкету</button>
     </div>
     <div class="form-success" id="form-success">
       <div class="s-icon">🌿</div>
@@ -1285,11 +1288,7 @@
   <h2 class="reveal">Михаил &amp; Анна</h2>
 
   <div class="ft-media reveal">
-    <!-- Замените на своё фото или видео:
-         <img src="your-photo.jpg" alt=""/>
-         <video src="your-video.mp4" autoplay muted loop playsinline></video> -->
-    <span>🤍</span>
-    <p>ФОТО / ВИДЕО</p>
+    <video src="Video%20Project%203.mp4" autoplay muted loop playsinline></video>
   </div>
 
   <div class="ft-rule"></div>
@@ -1392,19 +1391,65 @@ autoT = setInterval(slideNext, 5000);
 inner.addEventListener('touchstart', e => { inner._tx = e.touches[0].clientX; }, {passive:true});
 inner.addEventListener('touchend',   e => { const d = e.changedTouches[0].clientX - inner._tx; if(Math.abs(d)>40) d<0?slideNext():slidePrev(); }, {passive:true});
 
-/* ── FORM ─────────────────────────────────────── */
-function submitForm() {
-  const first = document.getElementById('g-first').value.trim();
-  const last  = document.getElementById('g-last').value.trim();
-  if (!first || !last) { showToast('Заполните имя и фамилию'); return; }
-  const att = document.querySelector('input[name="att"]:checked')?.value;
+/* ── FORM → Google Sheets (Apps Script) ───────── */
+/** Подставьте URL веб-приложения и тот же секрет, что в google-apps-script/Code.gs */
+const SHEETS_FORM = {
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbww0sin333rXjFmPO7Giidl_mQvS0ilbUvceWxFOzuev1C69euXvRcuIEOYV9UeBaxL/exec',
+  secret: 'mJ8kL2nQ9pR5sT7vW1xY4zA6bC0dE3fG7h',
+};
+
+function showFormSuccess(first, att) {
   document.getElementById('form-body').style.display = 'none';
   const s = document.getElementById('form-success');
   s.style.display = 'block';
   document.getElementById('suc-title').textContent = att === 'yes' ? `Ура, ${first}! Ждём вас!` : `Спасибо, ${first}`;
-  document.getElementById('suc-text').textContent  = att === 'yes'
+  document.getElementById('suc-text').textContent = att === 'yes'
     ? 'Мы очень рады, что вы будете с нами в этот особенный день!'
     : 'Жаль, что не получится. Будем думать о вас!';
+}
+
+async function submitForm() {
+  const first = document.getElementById('g-first').value.trim();
+  const last  = document.getElementById('g-last').value.trim();
+  if (!first || !last) { showToast('Заполните имя и фамилию'); return; }
+  const att = document.querySelector('input[name="att"]:checked')?.value;
+  const url = (SHEETS_FORM.scriptUrl || '').trim();
+  if (!url) {
+    showToast('Укажите SHEETS_FORM.scriptUrl в index.html');
+    return;
+  }
+
+  const btn = document.getElementById('form-submit');
+  const prevText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Отправка…';
+
+  const payload = {
+    secret: SHEETS_FORM.secret,
+    first,
+    last,
+    attendance: att === 'yes' ? 'Да' : 'Нет',
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) {}
+    if (!res.ok || data.ok !== true) {
+      showToast('Не удалось сохранить ответ. Попробуйте позже.');
+      return;
+    }
+    showFormSuccess(first, att);
+  } catch (_) {
+    showToast('Нет сети или сбой сервера. Попробуйте позже.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
 }
 
 /* ── TOAST ────────────────────────────────────── */
