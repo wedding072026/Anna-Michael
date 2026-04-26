@@ -32,12 +32,13 @@
       scroll-behavior: smooth;
       overflow-x: clip;
       max-width: 100%;
+      background: var(--forest);
     }
     body {
       font-family: 'Inter', sans-serif;
       overflow-x: clip;
       max-width: 100%;
-      background: var(--cream);
+      background: var(--forest);
     }
     body.intro-open { overflow: hidden; }
 
@@ -1060,7 +1061,7 @@
     ════════════════════════════════════════════ */
     #footer-section {
       background: var(--forest);
-      padding: clamp(72px, 15vw, 92px) 24px 52px;
+      padding: clamp(72px, 15vw, 92px) 24px max(72px, calc(52px + env(safe-area-inset-bottom)));
       text-align: center; position: relative; overflow: visible;
     }
     #footer-section::after {
@@ -1077,6 +1078,15 @@
     #footer-section > *:not(.ft-leaf-t):not(.ft-leaf-l):not(.ft-leaf-r):not(.ft-flower):not(.seam-garland) {
       position: relative;
       z-index: 12;
+    }
+    @media (max-width: 640px) {
+      #footer-section {
+        padding-bottom: max(112px, calc(92px + env(safe-area-inset-bottom)));
+      }
+      #footer-section::after {
+        bottom: -120px;
+        height: 122px;
+      }
     }
     .ft-leaf-t {
       position: absolute; top: 6px; left: 50%;
